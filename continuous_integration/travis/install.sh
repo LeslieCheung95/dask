@@ -1,3 +1,6 @@
+set -xe
+
+#!/usr/bin/env bash
 # Install conda
 case "$(uname -s)" in
     'Darwin')
@@ -10,79 +13,44 @@ case "$(uname -s)" in
 esac
 
 
+# Install miniconda
 wget https://repo.continuum.io/miniconda/$MINICONDA_FILENAME -O miniconda.sh
 bash miniconda.sh -b -p $HOME/miniconda
 export PATH="$HOME/miniconda/bin:$PATH"
-conda config --set always_yes yes --set changeps1 no
+export BOTO_CONFIG=/dev/null
+conda config --set always_yes yes --set changeps1 no --set remote_max_retries 10
 
 # Create conda environment
-conda create -q -n test-environment python=$PYTHON
+conda env create -q -n test-environment -f $ENV_FILE
 source activate test-environment
 
-# Pin matrix items
-# Please see PR ( https://github.com/dask/dask/pull/2185 ) for details.
-touch $CONDA_PREFIX/conda-meta/pinned
-echo "numpy $NUMPY" >> $CONDA_PREFIX/conda-meta/pinned
-echo "pandas $PANDAS" >> $CONDA_PREFIX/conda-meta/pinned
+# We don't have a conda-forge package for cityhash
+# We don't include it in the conda environment.yaml, since that may
+# make things harder for contributors that don't have a C++ compiler
+pip install --no-deps cityhash
 
-# Install dependencies.
-conda install -q -c conda-forge \
-    numpy \
-    pandas \
-    bcolz \
-    blosc \
-    bokeh \
-    boto3 \
-    chest \
-    cloudpickle \
-    coverage \
-    cytoolz \
-    distributed \
-    graphviz \
-    h5py \
-    ipython \
-    partd \
-    psutil \
-    pytables \
-    "pytest<=3.1.1" \
-    scikit-image \
-    scikit-learn \
-    scipy \
-    sqlalchemy \
-    toolz
-
-pip install -q git+https://github.com/dask/partd --upgrade --no-deps
-pip install -q git+https://github.com/dask/zict --upgrade --no-deps
-pip install -q git+https://github.com/dask/distributed --upgrade --no-deps
-pip install -q git+https://github.com/mrocklin/sparse --upgrade --no-deps
-pip install -q git+https://github.com/dask/s3fs --upgrade --no-deps
-
-if [[ $PYTHONOPTIMIZE != '2' ]] && [[ $NUMPY > '1.11.0' ]] && [[ $NUMPY < '1.13.0' ]]; then
-    conda install -q -c conda-forge numba cython
-    pip install -q git+https://github.com/dask/fastparquet
+if [[ ${UPSTREAM_DEV} ]]; then
+    conda uninstall --force numpy pandas
+    pip install -f https://7933911d6844c6c53a7d-47bd50c35cd79bd838daf386af554a83.ssl.cf2.rackcdn.com \
+        --no-deps \
+        --pre \
+        numpy \
+        pandas
+    pip install \
+        --no-deps \
+        --upgrade \
+        locket \
+        git+https://github.com/pydata/sparse \
+        git+https://github.com/dask/s3fs \
+        git+https://github.com/intake/filesystem_spec \
+        git+https://github.com/dask/partd \
+        git+https://github.com/dask/zict \
+        git+https://github.com/dask/distributed
 fi
-
-if [[ $PYTHON == '2.7' ]]; then
-    pip install -q backports.lzma mock
-fi
-
-pip install -q \
-    cachey \
-    graphviz \
-    moto \
-    pyarrow \
-    --upgrade --no-deps
-
-pip install -q \
-    cityhash \
-    flake8 \
-    mmh3 \
-    pandas_datareader \
-    pytest-xdist \
-    xxhash \
-    pycodestyle
 
 # Install dask
-pip install -q --no-deps -e .[complete]
-echo pip freeze
-pip freeze
+pip install --quiet --no-deps -e .[complete]
+echo conda list
+conda list
+
+set +xe

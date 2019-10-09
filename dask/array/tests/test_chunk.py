@@ -1,7 +1,6 @@
-from __future__ import absolute_import, division, print_function
-
 import pytest
-pytest.importorskip('numpy')
+
+pytest.importorskip("numpy")
 
 import numpy as np
 
@@ -16,7 +15,6 @@ def test_keepdims_wrapper_no_axis():
     summer_wrapped = keepdims_wrapper(summer)
 
     assert summer_wrapped != summer
-    assert summer_wrapped == keepdims_wrapper(summer_wrapped)
 
     a = np.arange(24).reshape(1, 2, 3, 4)
 
@@ -44,7 +42,6 @@ def test_keepdims_wrapper_one_axis():
     summer_wrapped = keepdims_wrapper(summer)
 
     assert summer_wrapped != summer
-    assert summer_wrapped == keepdims_wrapper(summer_wrapped)
 
     a = np.arange(24).reshape(1, 2, 3, 4)
 
@@ -72,7 +69,6 @@ def test_keepdims_wrapper_two_axes():
     summer_wrapped = keepdims_wrapper(summer)
 
     assert summer_wrapped != summer
-    assert summer_wrapped == keepdims_wrapper(summer_wrapped)
 
     a = np.arange(24).reshape(1, 2, 3, 4)
 
